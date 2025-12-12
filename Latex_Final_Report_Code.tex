@@ -1,0 +1,1048 @@
+\documentclass[12pt]{report}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{amsmath}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=black, citecolor=blue]{hyperref}
+
+\onehalfspacing
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\Huge \textbf{Empirical Analysis of Recommendation Algorithms} \par}
+    \vspace{1cm}
+    {\Large DS8001: Design of Algorithms and Programming for Massive Data \par}
+    \vspace{1cm}
+
+    {\large\textbf {Final Project Report} \par}
+    \vspace{1.5cm}
+    
+    {\Large Group Members: \\
+    Taran Veer Singh \\
+    Devanshu Prajapati \par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ---------------- INTRODUCTION ----------------
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+
+For many digital platforms like Netflix, Amazon, Spotify the Recommendation systems are the core component for their business in predicting user preferences and suggestion on basis of various algorithms that analyze the huge data and gives user-item suggestion. Here this project aims for the empirical comparison of multiple recommendation algorithms on real-world dataset of movies to identify the most effective technique in terms of accuracy and scalability. Also, it will provide the insights into how the algorithm choice impact the quality of recommendations.
+This project conducts an empirical analysis of multiple recommendation algorithms such as Content-Based Filtering, Collaborative Filtering (User–User, Item–Item), Popularity-Based Recommendation, Hybrid Modeling, and Latent Factor Models (SVD)—using The Movies Dataset from Kaggle.\\
+The objective is to evaluate their relative performance under identical data, preprocessing, and evaluation metrics.
+
+
+% ---------------- LITERATURE REVIEW ----------------
+\chapter*{Literature Review}
+\addcontentsline{toc}{chapter}{Literature Review}
+\textbf{1. Content-Based Filtering}\\
+Content-based models mostly depend on item information like keywords and descriptions, using methods such as TF-IDF and cosine similarity to compare items. They work well when there is plenty of good metadata, but they cannot fully understand a user’s real preferences and often recommend items that are too similar to each other.\\
+\textbf{2. Collaborative Filtering}\\
+Sarwar et al. (2001) introduced user-based and item-based collaborative filtering approaches that rely on neighborhood similarity. Later, Deshpande \& Karypis (2004) improved similarity search to enhance scalability. These methods are effective but sensitive to sparse rating matrices.\\
+\textbf{3. Hybrid Models}\\
+Hybrid systems integrate content-based and collaborative data to improve recommendation robustness and reduce the cold-start issue. Because they incorporate several viewpoints and frequently result in higher accuracy, they are widely employed in industry.\\
+\textbf{4. Latent Factor Models}\\
+Latent factor models gained prominence after the Netflix Prize competition. SVD decomposes the user–item matrix to capture hidden features such as genre affinity, pacing preference, or user mood. These models are highly scalable and typically outperform neighborhood-based methods.\\
+
+
+
+% ---------------- METHODS ----------------
+\chapter*{Methods}
+\addcontentsline{toc}{chapter}{Methods}
+
+This section describes the procedures used to clean and organize the dataset, implement the recommendation algorithms, and evaluate their performance. It provides a structured explanation of the methodological steps followed in building and analyzing each model.
+
+\section*{Dataset and Data Preparation}
+\addcontentsline{toc}{section}{Dataset and Data Preparation}
+
+The analysis is based on the Movies Dataset from Kaggle 
+\href{https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset}{\textcolor{blue}{(Link)}}, 
+which includes movie metadata, cast and crew details, keywords, user ratings, and popularity . 
+Since the dataset is spread across multiple files, the first step involved cleaning, aligning, and 
+merging everything into a consistent structure.
+
+
+
+\subsection*{Data Cleaning Steps}
+
+\begin{enumerate}
+    \item Imported all relevant datasets, including:
+    \begin{itemize}
+        \item \texttt{movies\_metadata.csv}
+        \item \texttt{credits.csv}
+        \item \texttt{keywords.csv}
+        \item \texttt{ratings\_small.csv}
+        \item \texttt{ratings.csv}
+        \item \texttt{links\_small.csv}
+        \item \texttt{links.csv}
+    \end{itemize}
+
+    \item Converted all ID fields to numeric format to maintain consistency across files and prevent merging errors.
+
+    \item Removed entries containing missing or invalid values in key attributes such as titles, overviews, genres, popularity, and ratings.
+
+    \item Processed the \texttt{genres} and \texttt{keywords} fields, which were in JSON-like structures, by converting them into Python lists for easier parsing.
+
+    \item Extracted the top three cast members per movie to reduce noise and highlight the most significant contributors.
+
+    \item Isolated the director name from the crew list, improving the metadata quality.
+
+    \item Merged all datasets using the movie ID, creating a unified table with:
+    \begin{itemize}
+        \item Title
+        \item Overview
+        \item Genres
+        \item Keywords
+        \item Cast (top three)
+        \item Director
+        \item Ratings
+        \item Popularity
+    \end{itemize}
+\end{enumerate}
+
+\section*{1. Content-Based Filtering}
+\addcontentsline{toc}{subsection}{1. Content-Based Filtering}
+
+Content-based filtering represents each movie using descriptive metadata and measures similarity between movies to recommend items with similar characteristics.
+
+\subsection*{Steps for Content-Based Recommender}
+
+\begin{enumerate}
+    \item Extracted key metadata fields, including keywords, genres, cast, crew, and overview.
+
+    \item Converted JSON-like fields into Python lists for easier manipulation.
+
+    \item Selected essential personnel:
+    \begin{itemize}
+        \item Top 3 cast members
+        \item Director
+    \end{itemize}
+
+    \item Cleaned and standardized text information by converting text to lowercase, removing extra spaces, and tokenizing the overview.
+
+    \item Combined all useful metadata into a single field called tags.
+
+    \item Applied stemming using PorterStemmer to reduce words to their base form.
+
+    \item Converted the tags into numerical vectors using:
+    \begin{itemize}
+        \item CountVectorizer: creates frequency-based word vectors.
+        \item TF-IDF Vectorizer: weighs words based on importance across the dataset.
+    \end{itemize}
+
+    \item Computed similarity scores using cosine similarity, which measures the angle between two vectors and returns a value between 0 and 1.
+
+    \item Saved the processed models and data to disk using pickle, including:
+    \begin{itemize}
+        \item Trained vectorizers (CountVectorizer and TF-IDF)
+        \item Vector matrices for all movies
+        \item Cosine similarity matrices for both models
+        \item Final movie dataframe with tags
+    \end{itemize}
+    These saved files are later loaded by the recommendation script to generate movie suggestions without re-running the full preprocessing pipeline.
+\end{enumerate}
+
+\section*{2. Collaborative Filtering Approach}
+\addcontentsline{toc}{subsection}{2. Collaborative Filtering Approach}
+
+Collaborative Filtering (CF) predicts user preferences based on rating patterns. It uses either user similarity (User–User CF) or item similarity (Item–Item CF).
+
+\subsection*{Building the Rating Matrix}
+
+\begin{enumerate}
+    \item Loaded ratings\_small.csv as the primary ratings dataset.
+    \item Split data into 70\% training and 30\% testing.
+    \item Constructed a user–item rating matrix:
+    \begin{itemize}
+        \item Rows = users
+        \item Columns = movies
+        \item Values = movie ratings
+    \end{itemize}
+    \item Filled missing values with 0 to indicate “no interaction”.
+\end{enumerate}
+
+\subsection*{User--User Collaborative Filtering}
+
+User--User CF identifies similar users and predicts ratings based on how similar users rated the same items.
+
+\begin{itemize}
+    \item Computed user similarity using Cosine Similarity.
+    \item Identified top similar users for each target user.
+    \item Predicted missing ratings using a weighted average of similar users' ratings.
+\end{itemize}
+
+\textbf{Example:}  
+If users A and B consistently like the same action movies, and B rated a movie that A has not watched, CF predicts that A will likely enjoy that movie as well.
+
+\subsection*{Item--Item Collaborative Filtering}
+
+Item--Item CF focuses on relationships between movies instead of users.
+
+\begin{itemize}
+    \item Compared movies by analyzing how users rated them.
+    \item Computed movie similarity scores using the item--item similarity matrix.
+    \item Predicted user ratings based on ratings of similar movies.
+\end{itemize}
+
+\textbf{Example:}  
+If users who liked Inception also liked Interstellar, these movies are considered similar. If a user rates Inception highly, the model recommends Interstellar.
+
+\subsection*{Evaluation of Collaborative Filtering}
+
+Both User--User and Item--Item Collaborative Filtering models were evaluated using Root Mean Squared Error (RMSE).  
+The predicted ratings from each model were compared with the true ratings from the test set, and RMSE was calculated to measure how close the predictions were to the actual user ratings.  
+Lower RMSE values indicate better predictive accuracy.
+
+
+\section*{3. Popularity-Based Recommendation}
+\addcontentsline{toc}{subsection}{3. Popularity-Based Recommendation}
+
+In this approach, movies are recommended purely based on their popularity score provided in the movies\_metadata.csv file.  
+The model does not use user ratings or rating counts; it relies entirely on how popular a movie is according to the metadata.
+
+\subsection*{Implementation Steps}
+
+\begin{enumerate}
+    \item \textbf{Load and select relevant columns:}  
+    The dataset is filtered to keep only the fields:
+    \begin{itemize}
+        \item id
+        \item title
+        \item original\_title
+        \item popularity
+    \end{itemize}
+
+    \item \textbf{Convert data types and clean data:}  
+    The id and popularity columns are converted to numeric, and any rows with missing or invalid values are removed.
+
+    \item \textbf{Rank movies by popularity:}  
+    Movies are sorted in descending order of the popularity score, and the top 10 titles are selected.
+
+    \item \textbf{Visualize the top movies}:  
+    A horizontal bar chart is generated using Seaborn, with:
+    \begin{itemize}
+        \item x-axis: popularity score  
+        \item y-axis: movie titles  
+    \end{itemize}
+    This visualization highlights the most popular movies in the dataset.
+\end{enumerate}
+
+
+\section*{4. Hybrid Recommendation System}
+\addcontentsline{toc}{subsection}{4. Hybrid Recommendation System}
+
+The hybrid recommendation system combines rating-based and popularity-based information to create a more balanced and flexible ranking method.  
+By integrating both weighted ratings and popularity metrics, the hybrid approach recommends movies that are both highly rated and widely recognized.
+
+\subsection*{Steps}
+
+\begin{enumerate}
+    \item \textbf{Dataset Loading and Selection:}  
+    Three datasets were loaded:
+    \begin{itemize}
+        \item movies\_metadata.csv
+        \item credits.csv
+        \item keywords.csv
+    \end{itemize}
+    Only essential fields were retained:
+    \begin{itemize}
+        \item title, original title, overview  
+        \item vote\_average, vote\_count  
+        \item popularity  
+        \item genres  
+    \end{itemize}
+
+    \item \textbf{Data Cleaning and ID Conversion:}  
+    All ID fields and numeric attributes (popularity, vote count, vote average) were converted to numeric.  
+    Missing or invalid rows were removed.  
+    Datasets were merged using the movie ID.
+
+    \item \textbf{Weighted Rating Calculation:}  
+    A weighted rating was calculated using the standard IMDb formula:
+
+    \[
+    \text{weighted\_average} = \frac{(R \times v) + (C \times m)}{v + m}
+    \]
+
+    where:
+    \begin{itemize}
+        \item \(R\) = movie's average rating  
+        \item \(v\) = number of votes  
+        \item \(C\) = mean rating across all movies  
+        \item \(m\) = minimum vote threshold (70th percentile)  
+    \end{itemize}
+
+    \item \textbf{Normalization of Rating and Popularity:}  
+    Since weighted ratings and popularity exist on different scales, both were normalized to the range 0–1 using MinMaxScaler.  
+    This prevents one feature from dominating the combined score.
+
+    \item \textbf{Hybrid Score Computation:}  
+    A hybrid score was created using:
+
+    \[
+    \text{score} = 0.8 \times \text{weighted\_average} + 0.2 \times \text{popularity}
+    \]
+
+    The weight distribution prioritizes rating quality while still including popularity.
+
+    \item \textbf{Ranking and Selection:}  
+    Movies were sorted in descending order using the hybrid score.  
+    The top 10 movies were selected and visualized using a bar chart.
+
+    \item \textbf{Model Evaluation:}  
+    RMSE values were computed for:
+    \begin{itemize}
+        \item Weighted rating alone  
+        \item Hybrid blended score  
+    \end{itemize}
+    This comparison shows whether including popularity improves prediction accuracy.
+\end{enumerate}
+
+
+\section*{5. Latent Factor Model (SVD)}
+\addcontentsline{toc}{subsection}{5. Latent Factor Model (SVD)}
+
+The latent factor model was implemented using the Singular Value Decomposition (SVD) algorithm from the Surprise library.  
+This approach reduces users and movies into a shared latent space, enabling the system to estimate how strongly a user is likely to prefer a movie based on learned hidden features.
+
+\subsection*{Data Preparation}
+
+\begin{enumerate}
+    \item \textbf{Loaded input datasets:}
+    \begin{itemize}
+        \item ratings.csv — user–movie interactions  
+        \item movies\_metadata.csv — movie information  
+        \item links.csv — mapping between MovieLens and TMDb IDs  
+    \end{itemize}
+
+    \item \textbf{Converted ID fields to numeric:}  
+    Ensures consistent merging and prevents data-type errors.
+
+    \item \textbf{Created a mapping of movieId to titles:}  
+    \begin{itemize}
+        \item links.csv was merged with movies\_metadata.csv
+        \item Extracted movie titles using TMDb ID  
+        \item Saved the output as movie\_titles\_clean.csv 
+    \end{itemize}
+
+    \item \textbf{Filtered active users and movies:}  
+    Only users and movies with at least 20 ratings were retained:
+    \begin{itemize}
+        \item Rating counts per userId and movieId were computed  
+        \item Ratings below this threshold were removed  
+    \end{itemize}
+
+    \item \textbf{Prepared the Surprise dataset:}
+    \begin{itemize}
+        \item Defined a Reader object with rating scale 1–5  
+        \item Loaded ratings into a Surprise Dataset with columns:  
+              userId, movieId, rating  
+    \end{itemize}
+
+    \item \textbf{Performed train–test split:}  
+    80\% of data was used for training and 20\% for testing using Surprise’s built-in split method.
+\end{enumerate}
+
+\subsection*{SVD Model Training}
+
+\begin{enumerate}
+    \item \textbf{Model configuration:}  
+    The SVD model was initialized with:
+    \begin{itemize}
+        \item n\_factors = 80
+        \item reg\_all = 0.02
+        \item lr\_all = 0.005
+        \item n\_epochs = 5
+        \item random\_state = 42
+    \end{itemize}
+
+    \item \textbf{Training process:}
+    \begin{itemize}
+        \item Model trained on the training set  
+        \item Evaluated using RMSE and MAE on the test set  
+    \end{itemize}
+
+    \item \textbf{Saving the model:}  
+    The trained model was stored as svd\_model.pkl using Python’s pickle library.
+\end{enumerate}
+
+\subsection*{Recommendation and Error Analysis}
+
+The latentwithRMSE.py script generates user-specific recommendations and visualizes error distribution.
+
+\begin{enumerate}
+    \item \textbf{Loading the trained model:}
+    \begin{itemize}
+        \item Loaded svd\_model.pkl  
+        \item Reloaded ratings and movie title mappings  
+    \end{itemize}
+
+    \item \textbf{Recommendation generation:}
+    \begin{itemize}
+        \item Identified all movies a given user has not rated  
+        \item The SVD model predicted estimated ratings  
+        \item Predictions were sorted to produce Top-N recommendations with titles  
+    \end{itemize}
+
+    \item \textbf{RMSE visualization:}
+    \begin{itemize}
+        \item Random sample of 1,000 ratings extracted  
+        \item Trainset and testset built from sample  
+        \item Model predictions generated  
+        \item Squared errors computed and plotted to illustrate error distribution  
+        \item Sample RMSE score printed for evaluation  
+    \end{itemize}
+\end{enumerate}
+
+\section*{6. Evaluation Metrics}
+\addcontentsline{toc}{section}{6. Evaluation Metrics}
+
+All models in this study were evaluated using a combination of:
+
+\begin{itemize}
+    \item \textbf{RMSE (Root Mean Squared Error):}  
+          Measures prediction error magnitude.
+
+    \item \textbf{MAE (Mean Absolute Error):}  
+          Captures average error magnitude in predictions.
+
+    \item \textbf{Similarity Score (for content-based models):}  
+          Cosine similarity values indicating how closely movies match.
+
+    \item \textbf{Blended Score (for hybrid model):}  
+          Weighted combination of normalized rating strength and popularity.
+\end{itemize}
+
+
+
+
+\chapter*{Experimental Setup}
+\addcontentsline{toc}{chapter}{Experimental Setup}
+
+This section outlines the experimental setup for each algorithmic component developed in the project. 
+For every script, the software dependencies, implemented models, internal configurations, and input–output behavior are documented to ensure clarity and reproducibility.
+
+\section*{1. Content-Based Preprocessing (File: 1.1.Content\_based.py)}
+\addcontentsline{toc}{section}{1. Content-Based Preprocessing}
+
+This script performs the full preprocessing pipeline for metadata-driven recommendation models.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item numpy
+    \item ast
+    \item pickle
+    \item scikit-learn (CountVectorizer, TfidfVectorizer, cosine\_similarity)
+    \item nltk (PorterStemmer)
+\end{itemize}
+
+\textbf{Models Implemented:}  
+Bag-of-Words (CountVectorizer),  
+TF–IDF representation,  
+Cosine similarity matrices for both models.
+
+\textbf{Internal Processing Parameters:}
+\begin{itemize}
+    \item Batch size of 500 for cosine similarity computation.
+    \item Top three cast members extracted per movie.
+    \item One director extracted from crew metadata.
+    \item Combined tag field processed and stemmed.
+\end{itemize}
+
+\textbf{Input–Output Behavior:}  
+No user input required.  
+The script generates and saves the following model files, which are required by the recommendation system.
+
+\textbf{CountVectorizer Outputs:}
+\begin{itemize}
+    \item CV\_movies.pkl
+    \item CV\_similarity.pkl
+    \item CV\_vectorizer.pkl
+    \item CV\_vectors.pkl
+\end{itemize}
+
+\textbf{TF–IDF Outputs:}
+\begin{itemize}
+    \item TFIDF\_movies.pkl
+    \item TFIDF\_similarity.pkl
+    \item TFIDF\_vectorizer.pkl
+    \item TFIDF\_vectors.pkl
+\end{itemize}
+
+These files serve as the preprocessed models and are loaded later by the recommendation script.
+
+
+\section*{2. Content-Based Recommendation (File: 1.2.Content\_based\_Recommender.py)}
+\addcontentsline{toc}{section}{2. Content-Based Recommendation}
+
+This script loads the saved similarity models and generates recommendations.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pickle
+    \item numpy
+    \item matplotlib
+\end{itemize}
+
+\textbf{Models Used:}  
+Cosine similarity matrices from CountVectorizer and TF–IDF.
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item Top-N recommendations default = 5
+    \item Comparison plot of similarity scores
+\end{itemize}
+
+\textbf{Input–Output Behavior:}  
+User inputs a movie title (case sensitive).  
+Outputs:
+\begin{itemize}
+    \item Top-5 TF–IDF recommendations
+    \item Top-5 CountVectorizer recommendations
+    \item Similarity comparison plot
+\end{itemize}
+
+\section*{3. Collaborative Filtering System (File: Collaborative\_Filtering.py)}
+\addcontentsline{toc}{section}{3. Collaborative Filtering System}
+
+This script implements user–user and item–item Collaborative Filtering.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item numpy
+    \item scikit-learn
+    \item matplotlib
+\end{itemize}
+
+\textbf{Models Used:}  
+Cosine similarity-based user–user and item–item CF,  
+RMSE evaluation.
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item 70–30 train–test split
+    \item Similarity normalization using absolute sums to avoid division errors.
+    \item RMSE computed using mean squared error from sklearn.
+    \item Top-N recommendations default = 5
+\end{itemize}
+
+\textbf{Input–Output Behavior:}  
+User inputs a userId (in terminal) for:
+\begin{itemize}
+    \item User–User CF recommendations  
+    \item Item–Item CF recommendations  
+\end{itemize}
+
+Outputs also include:
+\begin{itemize}
+    \item User–User CF recommendations (top-N predicted movies)
+    \item Item–Item CF recommendations excluding movies already watched
+    \item RMSE comparison bar chart
+\end{itemize}
+
+\section*{4. Popularity-Based Recommender (File: Popularity\_Based.py)}
+\addcontentsline{toc}{section}{4. Popularity-Based Recommender}
+
+This script ranks movies purely using the popularity field.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item matplotlib
+    \item seaborn
+\end{itemize}
+
+\textbf{Model Used:}  
+Direct ranking (no statistical model).
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item Sorting performed in descending popularity
+    \item Top-10 movies extracted
+\end{itemize}
+
+\textbf{Input–Output Behavior:}  
+No user input required.  
+Outputs:
+\begin{itemize}
+    \item Top-10 popular movies (Printed in terminal)
+    \item Horizontal bar chart, ranking movies on popularity score.
+\end{itemize}
+
+\section*{5. Hybrid Recommendation Model (File: Hybrid\_Based\_Recommender.py)}
+\addcontentsline{toc}{section}{5. Hybrid Recommendation Model}
+
+This script blends rating strength and popularity into a hybrid score.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item numpy
+    \item scikit-learn (MinMaxScaler)
+    \item matplotlib
+    \item seaborn
+\end{itemize}
+
+\textbf{Models Used:}  
+Weighted rating (IMDb formula),  
+Hybrid score using normalized rating + popularity.
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item Weighted average computed using IMDb formula
+    \item Minimum vote threshold = 70th percentile
+    \item Hybrid score = 0.8 × rating + 0.2 × popularity
+    \item RMSE computed for rating-only and hybrid models
+\end{itemize}
+
+\textbf{Input–Output Behavior:}  
+No user input required.  
+
+Outputs:
+\begin{itemize}
+    \item Top-10 hybrid-ranked movies
+    \item Bar chart showing hybrid scores
+    \item RMSE comparison chart
+\end{itemize}
+
+\section*{6.Latent Factor Model Training (File: 5.1.Latent\_Model.py)}
+\addcontentsline{toc}{section}{6. Latent Factor Model Training}
+
+This script trains the SVD model on the ratings dataset and saves the trained model for later use.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item surprise
+    \item pickle
+    \item matplotlib
+\end{itemize}
+
+\textbf{Model Used:}
+\begin{itemize}
+    \item Surprise SVD (latent factor matrix decomposition)
+\end{itemize}
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item Latent factors: 80
+    \item Regularization: 0.02
+    \item Learning rate: 0.005
+    \item Training epochs: 5
+    \item Train–test split: 80--20
+\end{itemize}
+
+\textbf{Input–Output Behavior:}
+\begin{itemize}
+    \item No user input is required.
+    \item The script outputs in terminal:
+    \begin{itemize}
+        \item Training time of the SVD model
+        \item RMSE and MAE on the test set
+        \item A saved model file: svd\_model.pkl
+        \item A cleaned mapping file: movie\_titles\_clean.csv
+    \end{itemize}
+\end{itemize}
+
+\section*{7. Latent Factor Recommender (File: 5.2.Latent\_Recommender.py)}
+\addcontentsline{toc}{section}{7. Latent Factor Recommender}
+
+This script loads the trained SVD model, generates movie recommendations, and evaluates prediction errors.
+
+\textbf{Libraries Used:}
+\begin{itemize}
+    \item pandas
+    \item surprise
+    \item pickle
+    \item matplotlib
+\end{itemize}
+
+\textbf{Model Used:}
+\begin{itemize}
+    \item Pretrained SVD model loaded from \texttt{svd\_model.pkl}
+\end{itemize}
+
+\textbf{Internal Parameters:}
+\begin{itemize}
+    \item Sample size for fast RMSE test: 1000 ratings
+    \item Default recommendation size: Top--5 movies
+\end{itemize}
+
+\textbf{Input–Output Behavior:}
+\begin{itemize}
+    \item User enters a userId in the terminal.
+    \item The script outputs:
+    \begin{itemize}
+        \item Top-N unseen movies recommended for the user (the output in terminal)
+        \item RMSE value from the fast sample test
+        \item RMSE error distribution plot
+    \end{itemize}
+\end{itemize}
+
+
+
+
+
+\section*{Results}
+\addcontentsline{toc}{chapter}{Results}
+
+This section presents the outputs and visualisations generated from all recommendation models
+implemented in the project. Each model includes terminal screenshots and plots that were produced
+directly from the Python scripts.
+
+\subsection*{1. Content-Based Filtering}
+\addcontentsline{toc}{subsection}{1. Content-Based Filtering}
+
+Content-based filtering uses movie descriptions (genres, overview, cast, and keywords) to find
+similar movies. Two text-processing techniques were used: TF--IDF and 
+CountVectorizer. Both compute cosine similarity between movies but behave differently due to 
+how the text is represented.
+
+\subsubsection*{1.1 Terminal Output — TF--IDF Recommendations}
+
+The movie Hulk was used as the input to test similarity-based recommendations.  
+TF--IDF focuses on important and unique words, which usually produces more meaningful similarity matches.
+
+(Note: You can enter your own movie name for which you want suggestion, but make sure the movie name is correct and the first letter should be capital.)
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Content1.png}
+    \caption{TF--IDF terminal output for the movie ``Hulk''.}
+\end{figure}
+
+\subsubsection*{1.2 Terminal Output — CountVectorizer Recommendations}
+
+CountVectorizer uses raw word frequency. This sometimes introduces noise because movies may match 
+based only on repeated common words, not meaningful context.
+
+(Note: You can enter your own movie name for which you want suggestion, but make sure the movie name is correct and the first letter should be capital.)
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Content2.png}
+    \caption{CountVectorizer terminal output for the movie ``Hulk''.}
+\end{figure}
+
+\subsubsection*{1.3 Similarity Score Plot}
+
+The following plot shows the similarity distributions for TF--IDF and CountVectorizer.  
+TF--IDF gives smoother and more stable similarity scores, while CountVectorizer produces sharper
+variations due to raw frequency counts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Content.png}
+    \caption{Comparison of similarity scores from TF--IDF and CountVectorizer.}
+\end{figure}
+
+\textbf{Observation:}  
+TF--IDF performed better for text-based recommendations because it reduces noise and focuses on 
+important terms instead of frequent words.
+
+\subsection*{2. Collaborative Filtering}
+\addcontentsline{toc}{subsection}{2. Collaborative Filtering}
+
+Collaborative Filtering works by analysing user–movie rating patterns. Two approaches were tested:  
+User--User similarity and Item--Item similarity.  
+Both were evaluated using RMSE and recommendation outputs.
+
+\subsubsection*{2.1 Terminal Output — RMSE Results}
+
+The terminal output shows the RMSE values calculated for both models.  
+RMSE measures how far the predicted ratings are from actual user ratings.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{collab1.png}
+    \caption{RMSE results for User--User and Item--Item Collaborative Filtering.}
+\end{figure}
+
+\subsubsection*{2.2 Terminal Output — User--User Recommendations}
+
+The User--User model recommends movies based on similar users.  
+Here, recommendations were generated for User 50.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{collab2.png}
+    \caption{User--User Collaborative Filtering recommendations for User 50.}
+\end{figure}
+
+\subsubsection*{2.3 Terminal Output — Item--Item Recommendations}
+
+Item--Item compares movies instead of users. If a user liked a movie, similar movies are recommended.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{collab3.png}
+    \caption{Item--Item Collaborative Filtering recommendations for User 50.}
+\end{figure}
+
+\subsubsection*{2.4 RMSE Comparison Plot}
+
+The plot compares RMSE values of both methods.  
+User--User showed slightly better performance with lower RMSE.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{Collab.png}
+    \caption{RMSE comparison between User--User and Item--Item Collaborative Filtering.}
+\end{figure}
+
+\textbf{Observation:}  
+User--User Collaborative Filtering performed slightly better than Item--Item in terms of RMSE.  
+This happened because users often show more consistent rating behaviour than movies do.  
+When users with similar tastes are grouped together, their shared preferences help produce more accurate predictions.  
+In contrast, Item--Item similarity can become less stable when movies have very few ratings, which increases sparsity and reduces prediction accuracy.
+
+
+\subsection*{3. Popularity-Based Recommendation}
+\addcontentsline{toc}{subsection}{3. Popularity-Based Recommendation}
+
+This model recommends movies based purely on the popularity score from the metadata.  
+It does not use user ratings, so results are the same for every user.
+
+\subsubsection*{3.1 Terminal Output — Top 10 Popular Movies}
+
+The following terminal output lists the ten most popular movies in the dataset.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Popularity1.png}
+    \caption{Terminal output showing the Top 10 most popular movies.}
+\end{figure}
+
+\subsubsection*{3.2 Popularity Plot}
+
+The bar plot visualises the popularity scores of the top 10 movies.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Popularity.png}
+    \caption{Bar plot of Top 10 most popular movies based on metadata popularity score.}
+\end{figure}
+
+\textbf{Observation:}  
+This method is simple and fast but not personalised, since the recommendations do not depend on the user.
+
+\subsection*{4. Hybrid Recommendation Model}
+\addcontentsline{toc}{subsection}{4. Hybrid Recommendation Model}
+
+The hybrid model combines weighted ratings and popularity using Min--Max
+normalisation. This helps rank movies that are not only highly rated but also widely watched.
+
+\subsubsection*{4.1 Terminal Output — Top Movies by Hybrid Score}
+
+The output below shows the Top 10 movies ranked by the blended score.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Hybrid1.png}
+    \caption{Terminal output of Top 10 movies ranked using the Hybrid model.}
+\end{figure}
+
+\subsubsection*{4.2 Hybrid Score Plot}
+
+The bar plot visualises the blended score (Weighted Average + Popularity).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Hybrid.png}
+    \caption{Top 10 movies ranked using blended score.}
+\end{figure}
+
+\subsubsection*{4.3 Terminal Output — RMSE Values}
+
+The hybrid and weighted average scores were evaluated and compared using RMSE.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{hybrid3.png}
+    \caption{Terminal RMSE outputs for Weighted Average vs Hybrid Score.}
+\end{figure}
+
+\subsubsection*{4.4 RMSE Comparison Plot}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{hybrid2.png}
+    \caption{RMSE comparison between Weighted Average and Hybrid Score.}
+\end{figure}
+
+\textbf{Observation:}  
+Although the Hybrid model shows a slightly higher RMSE compared to using the weighted rating alone,
+it provides more balanced recommendations. This happens because the hybrid score does not focus only
+on rating quality but also considers how popular a movie is. 
+
+Movies with very high ratings but very few votes can sometimes distort prediction accuracy, which
+makes the weighted-rating RMSE lower. However, the hybrid model reduces this issue by giving a small
+weight to popularity. This results in recommendations that are not only highly rated but also widely
+watched and more relevant for a general audience. 
+
+In simple terms, the hybrid approach trades a small amount of accuracy (RMSE) for better overall
+usefulness and more realistic movie ranking.
+
+\subsection*{5. Latent Factor Model (SVD)}
+\addcontentsline{toc}{subsection}{5. Latent Factor Model (SVD)}
+
+The SVD model learns hidden patterns in user–movie interactions. It generally produces the most 
+accurate rating predictions among all collaborative methods.
+
+\subsubsection*{5.1 Terminal Output — Model Training, RMSE, and Recommendations}
+
+The screenshot includes:
+\begin{itemize}
+    \item Training time  
+    \item RMSE and MAE  
+    \item Fast RMSE using a sample  
+    \item Top--5 recommendations for User 50  
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Latent1.png}
+    \caption{Terminal output showing SVD model training, evaluation, and recommendations.}
+\end{figure}
+
+\subsubsection*{5.2 RMSE Error Distribution Plot}
+
+The following plot shows squared errors for a sample of 1,000 predictions.  
+Most errors remain close to zero, showing stable predictions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Latent2.png}
+    \caption{RMSE error distribution for a sample of 1,000 SVD predictions.}
+\end{figure}
+
+\textbf{Observation:}  
+SVD achieved the lowest RMSE among all models, making it the best-performing approach for rating
+prediction. This is because SVD is able to capture hidden relationships between users and movies by
+learning latent factors, such as a user's preference for specific genres, styles, or actors, even if
+these patterns are not directly visible in the raw data.
+
+Unlike User--User or Item--Item Collaborative Filtering, which rely heavily on explicit similarities
+and often struggle with sparse rating matrices, SVD reduces the data into a smaller set of meaningful
+dimensions. This allows the model to generalize better and make accurate predictions even when many
+movies or users have very few ratings.
+
+The RMSE error distribution plot also shows that most errors are close to zero, indicating stable and
+consistent predictions. Overall, the ability of SVD to handle sparsity, detect hidden patterns, and
+produce smooth error behaviour makes it the most effective algorithm in this project.
+
+
+
+
+
+
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+
+This project presented a comprehensive empirical analysis of multiple recommendation algorithms using
+The Movies Dataset from Kaggle. The evaluation covered Content-Based Filtering, Collaborative
+Filtering (User--User and Item--Item), Popularity-Based Recommendation, Hybrid Modeling, and the
+Latent Factor Model (SVD). Each model was implemented under the same preprocessing steps and
+evaluated using consistent metrics such as RMSE, similarity scores, and blended ranking measures.
+The goal was to understand the strengths, limitations, and practical applicability of each approach.
+
+The results demonstrate that every model performs well in specific contexts, but their effectiveness
+varies depending on the availability of metadata, rating density, and the underlying structure of the
+dataset. Content-Based Filtering provided stable recommendations when metadata such as cast, crew,
+genres, and overviews were rich and well-cleaned. TF--IDF outperformed CountVectorizer by reducing
+noise and focusing on more informative words, making the content-based suggestions more meaningful
+and consistent.
+
+For Collaborative Filtering, the User--User model achieved slightly better RMSE performance than the
+Item--Item model. This was expected, as users often display more stable and consistent rating patterns
+compared to movies, which can suffer from sparsity when only a small number of viewers have rated
+them. However, both neighbourhood-based CF models are limited by the sparsity of the rating matrix
+and show reduced accuracy when users have interacted with only a small subset of the dataset.
+
+The Popularity-Based model, while simple and non-personalised, served as an important baseline. It is
+fast, scalable, and effective when user preference data is unavailable, but it cannot tailor
+recommendations to individual users and often prioritizes mainstream movies over niche but relevant
+content.
+
+The Hybrid Recommendation Model attempted to combine the strengths of rating quality (via weighted
+average) and widespread engagement (via popularity). Although its RMSE was slightly higher than the
+weighted-average model alone, the hybrid approach produced more balanced and practical movie
+rankings. By integrating both statistical rating strength and popularity trends, the hybrid model
+mitigated the bias introduced by movies with very high ratings but low audience size. This aligns
+with real-world recommendation systems, where both quality and audience interest contribute to a
+movie's relevance.
+
+Among all models studied, the Latent Factor Model (SVD) demonstrated the highest predictive accuracy
+and the most stable error distribution. SVD was able to capture hidden interactions between users and
+movies by learning latent features such as preference patterns, stylistic tendencies, genre
+affinities, and other implicit behaviours that neighbourhood-based models cannot detect. Its ability
+to handle high sparsity and generalize from limited information makes SVD the most powerful algorithm
+in this study. The RMSE results clearly highlight its superiority and make it the preferred choice for
+rating prediction.
+
+Overall, this comparative experiment shows that no single model is universally optimal. Instead, the
+best approach depends on the recommendation scenario:
+\begin{itemize}
+    \item Content-Based Filtering is ideal when rich metadata exists and personalization is needed
+    without relying on user ratings.
+    \item Collaborative Filtering is effective when sufficient user–item interactions are available.
+    \item Popularity models work well when no personalization is required.
+    \item Hybrid models offer a balanced strategy that improves robustness.
+    \item SVD provides the most accurate predictions and scales well to large datasets.
+\end{itemize}
+
+In conclusion, the experiments demonstrate that modern recommendation systems benefit most from 
+hybrid and latent factor approaches, as they combine interpretability, scalability, and predictive 
+power. This study provides a detailed understanding of how different algorithms behave in practice 
+and highlights that the choice of model should depend on data availability, system requirements, and 
+desired user experience.
+
+
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\begin{enumerate}
+
+    \item Banik, R.  
+    \textit{The Movies Dataset}. Kaggle.  
+    Available at: \url{https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset}
+
+    \item Ricci, F., Rokach, L., \& Shapira, B. (2011).  
+    \textit{Introduction to Recommender Systems Handbook}. Springer.
+
+    \item Koren, Y., Bell, R., \& Volinsky, C. (2009).  
+    \textit{Matrix Factorization Techniques for Recommender Systems}.  
+    IEEE Computer, 42(8), 30--37.
+
+    \item Sarwar, B., Karypis, G., Konstan, J., \& Riedl, J. (2001).  
+    \textit{Item-Based Collaborative Filtering Recommendation Algorithms}.  
+    WWW Conference Proceedings.
+
+    \item Pedregosa, F., Varoquaux, G., Gramfort, A., et al. (2011).  
+    \textit{Scikit-learn: Machine Learning in Python}.  
+    JMLR, 12, 2825--2830.
+
+    \item IMDb Weighted Rating Formula.  
+    \textit{Understanding the IMDb weighted rating function}. \href{https://math.stackexchange.com/questions/169032/understanding-the-imdb-weighted-rating-function-for-usage-on-my-own-website}{\textcolor{blue}{Link}}
+
+\end{enumerate}
+
+\end{document}
