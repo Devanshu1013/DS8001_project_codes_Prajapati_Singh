@@ -73,7 +73,7 @@ Install dependencies using:
 `requirements.txt` 
 or
 ```bash
-pip install pandas numpy matplotlib seaborn scikit-learn nltk surprise
+pip install pandas numpy matplotlib seaborn scikit-learn nltk scikit-surprise
 ```
 ---
 
