@@ -182,9 +182,9 @@ Close the charts to complete execution.
 
 ---
 
-# Latent Factor Recommendation System (SVD)
+## Latent Factor Recommendation System (SVD)
 
-## How to Run
+### How to Run
 
 **Step 1:**  
 Run `5.1.Latent_Model.py` to train the SVD model.  
@@ -193,21 +193,25 @@ Run `5.1.Latent_Model.py` to train the SVD model.
 
 (File names: `svd_model.pkl`, `movie_titles_clean.csv`)
 
-
 **Step 2:**  
 After training completes, run `5.2.Latent_Recommender.py`.
 
 **Step 3:**  
-When prompted, enter a **user ID**.
+An RMSE chart will be displayed.  
+Close the chart window to continue execution.
 
 **Step 4:**  
-Press **Enter**.
+After closing the chart, you will be prompted to enter a **user ID**.
 
 **Step 5:**  
+Press **Enter**.
+
+**Step 6:**  
 The system will display:
 - Personalized movie recommendations  
 - RMSE results  
 - An error distribution chart
+
 ---
 ## Contributors
 
