@@ -1016,6 +1016,28 @@ power. This study provides a detailed understanding of how different algorithms 
 and highlights that the choice of model should depend on data availability, system requirements, and 
 desired user experience.
 
+\section*{Weaknesses and Threats to Validity}
+Although the project provides strong empirical insights, several limitations must be noted:
+\begin{itemize}
+    \item \textbf{Data sparsity:} The rating matrix is extremely sparse, which affects neighbourhood-based CF performance. Many movies and users have very few ratings.
+    \item \textbf{Metadata quality:} Content-based performance depends entirely on the richness and correctness of movie metadata. Any missing or incorrect fields reduce similarity accuracy.
+    \item \textbf{Evaluation limitation:} RMSE captures prediction error but does not measure user satisfaction or real-world recommendation usefulness.
+    \item \textbf{Computational constraints:} Due to hardware and time limits, large-scale hyperparameter tuning or deep learning methods were not explored.
+\end{itemize}
+
+\section*{Future Research Directions}
+Several promising directions can extend and strengthen this work:
+\begin{itemize}
+    \item \textbf{Incorporating deep learning models:} Neural Collaborative Filtering (NCF), autoencoders, or Transformer-based recommenders can better capture nonlinear user–item relationships.
+    \item \textbf{Hybrid Deep Models:} Combining embeddings from metadata (text, images, cast features) with collaborative filtering signals to produce richer recommendations.
+    \item \textbf{Temporal modeling:} Using time-aware recommendation methods that consider how user preferences change over time.
+    \item \textbf{Explainable recommendations:} Adding interpretability (e.g., “recommended because you liked…”) to improve user trust.
+    \item \textbf{Advanced hyperparameter tuning:} Techniques like Bayesian optimization or random search may yield better-performing SVD or hybrid models.
+    \item \textbf{Scalability experiments:} Testing algorithms on distributed frameworks (Spark, Hadoop, or GPUs) for real-world scale deployment.
+\end{itemize}
+
+
+
 
 \chapter*{References}
 \addcontentsline{toc}{chapter}{References}
